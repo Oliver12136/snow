@@ -1,0 +1,62 @@
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gyroscope Demo</title>
+<style>
+  body {
+    font-family: sans-serif;
+    padding: 20px;
+    background: #111;
+    color: #0f0;
+  }
+  button {
+    padding: 12px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+
+<h2>📱 Gyroscope Test</h2>
+<button id="request">Enable Motion Access</button>
+
+<p>Alpha (Z rotation): <span id="alpha">0</span></p>
+<p>Beta (X tilt): <span id="beta">0</span></p>
+<p>Gamma (Y tilt): <span id="gamma">0</span></p>
+
+<script>
+const alphaEle = document.getElementById("alpha");
+const betaEle  = document.getElementById("beta");
+const gammaEle = document.getElementById("gamma");
+
+function handleOrientation(event) {
+    alphaEle.textContent = event.alpha.toFixed(2);
+    betaEle.textContent  = event.beta.toFixed(2);
+    gammaEle.textContent = event.gamma.toFixed(2);
+}
+
+// iPhone：需要权限
+document.getElementById("request").onclick = async () => {
+    if (typeof DeviceMotionEvent !== "undefined" &&
+        typeof DeviceMotionEvent.requestPermission === "function") {
+
+        const permission = await DeviceMotionEvent.requestPermission();
+        if (permission === "granted") {
+            window.addEventListener("deviceorientation", handleOrientation);
+            alert("Motion access granted!");
+        } else {
+            alert("Permission denied.");
+        }
+    } else {
+        // Android 直接启动
+        window.addEventListener("deviceorientation", handleOrientation);
+        alert("Motion sensor active!");
+    }
+};
+</script>
+
+</body>
+</html>
