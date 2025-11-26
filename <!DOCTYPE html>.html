@@ -1,61 +1,112 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Gyroscope Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snow Globe</title>
 <style>
-  body {
-    font-family: sans-serif;
-    padding: 20px;
-    background: #111;
-    color: #0f0;
-  }
-  button {
-    padding: 12px 20px;
-    font-size: 16px;
-    border: none;
-    border-radius: 10px;
-  }
+    body {
+        margin: 0;
+        overflow: hidden;
+        background: linear-gradient(#0a0f33, #1e2a55);
+        color: white;
+        font-family: sans-serif;
+        text-align: center;
+    }
+    #btn {
+        position: absolute;
+        top: 40%;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 20px;
+        border-radius: 10px;
+        background: white;
+        color: black;
+        font-size: 16px;
+        border: none;
+        display: block;
+    }
 </style>
 </head>
 <body>
 
-<h2>📱 Gyroscope Test</h2>
-<button id="request">Enable Motion Access</button>
-
-<p>Alpha (Z rotation): <span id="alpha">0</span></p>
-<p>Beta (X tilt): <span id="beta">0</span></p>
-<p>Gamma (Y tilt): <span id="gamma">0</span></p>
+<canvas id="snowCanvas"></canvas>
+<button id="btn">Tap to Enable Motion</button>
 
 <script>
-const alphaEle = document.getElementById("alpha");
-const betaEle  = document.getElementById("beta");
-const gammaEle = document.getElementById("gamma");
+// ---------- Canvas Setup ----------
+const canvas = document.getElementById("snowCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-function handleOrientation(event) {
-    alphaEle.textContent = event.alpha.toFixed(2);
-    betaEle.textContent  = event.beta.toFixed(2);
-    gammaEle.textContent = event.gamma.toFixed(2);
+let snowflakes = [];
+const NUM = 150;
+
+// ---------- Create Snow ----------
+for (let i = 0; i < NUM; i++) {
+    snowflakes.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 3 + 1,
+        dx: 0,
+        dy: Math.random() * 1 + 0.5,
+    });
 }
 
-// iPhone：需要权限
-document.getElementById("request").onclick = async () => {
-    if (typeof DeviceMotionEvent !== "undefined" &&
-        typeof DeviceMotionEvent.requestPermission === "function") {
+let tiltX = 0;  // 陀螺仪X
+let tiltY = 0;  // 陀螺仪Y
 
-        const permission = await DeviceMotionEvent.requestPermission();
-        if (permission === "granted") {
-            window.addEventListener("deviceorientation", handleOrientation);
-            alert("Motion access granted!");
-        } else {
-            alert("Permission denied.");
-        }
+// ---------- Draw Snow ----------
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    snowflakes.forEach(flake => {
+        // 受到手机角度影响 → 类似雪景球倾斜的感觉
+        flake.x += flake.dx + tiltX * 0.2;
+        flake.y += flake.dy + tiltY * 0.3;
+
+        // 循环
+        if (flake.y > canvas.height) flake.y = -5;
+        if (flake.x > canvas.width) flake.x = 0;
+        if (flake.x < 0) flake.x = canvas.width;
+
+        ctx.beginPath();
+        ctx.arc(flake.x, flake.y, flake.r, 0, Math.PI * 2);
+        ctx.fillStyle = "white";
+        ctx.fill();
+    });
+
+    requestAnimationFrame(draw);
+}
+
+draw();
+
+// ---------- Motion Permission ----------
+const btn = document.getElementById("btn");
+
+btn.addEventListener("click", async () => {
+    btn.style.display = "none";
+
+    if (typeof DeviceMotionEvent.requestPermission === "function") {
+        // iOS
+        const response = await DeviceMotionEvent.requestPermission();
+        if (response === "granted") startMotion();
+        else alert("Permission denied");
     } else {
-        // Android 直接启动
-        window.addEventListener("deviceorientation", handleOrientation);
-        alert("Motion sensor active!");
+        // Android
+        startMotion();
     }
-};
+});
+
+function startMotion() {
+    window.addEventListener("deviceorientation", (e) => {
+        // gamma → 左右倾斜
+        // beta → 前后倾斜
+        tiltX = e.gamma || 0;
+        tiltY = e.beta || 0;
+    });
+}
 </script>
 
 </body>
